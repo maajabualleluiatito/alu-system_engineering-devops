@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
-# This script installs and configures Nginx on the web-01 server.
+#This script can automat an installation of nginx on a web server
 
-# Update package list and install nginx
-sudo apt-get update
-sudo apt-get install -y nginx
-
-# Configure nginx to listen on port 80 and serve the desired content
-echo "Holberton School for the win!" | sudo tee /var/www/html/index.html > /dev/null
-
-# Restart nginx using the service command (systemctl is not allowed)
+sudo apt update -y
+sudo apt install nginx -y
+echo "<h1>Holberton School</h1>" | sudo tee /var/www/html/index.nginx-debian.html > /dev/null
 sudo service nginx restart
