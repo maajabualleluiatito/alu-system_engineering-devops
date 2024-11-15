@@ -1,11 +1,56 @@
 #!/usr/bin/env bash
-# Install the load balancer
+#This script automates some stuff
 
+# Update package list and install HAProxy
+sudo apt update
+sudo apt install -y haproxy
 
-sudo apt-get -y update
-sudo apt-get -y upgrade
-sudo apt-get -y install haproxy
-sudo sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy
-sudo cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.original
-sudo sed -i "$ a\listen 5677-lb-01\n\tbind *:80\n\tmode http\n\tbalance roundrobin\n\toption httpclose\n\toption forwardfor\n\tserver 5677-web-02 100.25.213.47:80 check\n\tserver 5677-web-01 3.80.64.75:80 check" /etc/haproxy/haproxy.cfg
-sudo service haproxy start
+# Define hostnames for web-01 and web-02
+STUDENT_ID="204141123"
+WEB_01_HOSTNAME="${STUDENT_ID}-web-01"
+WEB_02_HOSTNAME="${STUDENT_ID}-web-02"
+
+# Define the IP addresses of the backend servers (replace these with actual IP addresses)
+WEB_01_IP="44.222.227.193"
+WEB_02_IP="34.228.16.92"
+
+# Configure HAProxy with round-robin load balancing
+sudo tee /etc/haproxy/haproxy.cfg > /dev/null <<EOF
+global
+    log /dev/log    local0
+    log /dev/log    local1 notice
+    chroot /var/lib/haproxy
+    stats socket /run/haproxy/admin.sock mode 660 level admin
+    stats timeout 30s
+    user haproxy
+    group haproxy
+    daemon
+    maxconn 2000
+
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    timeout connect 5000
+    timeout client  50000
+    timeout server  50000
+
+frontend http_front
+    bind *:80
+    default_backend http_back
+
+backend http_back
+    balance roundrobin
+    option httpchk
+    server ${WEB_01_HOSTNAME} ${WEB_01_IP}:80 check
+    server ${WEB_02_HOSTNAME} ${WEB_02_IP}:80 check
+EOF
+
+# Restart HAProxy to apply changes
+sudo systemctl restart haproxy
+# Enable HAProxy to start on boot
+sudo systemctl enable haproxy
+
+# Confirm setup is complete
+echo "HAProxy is configured for load balancing with round-robin between ${WEB_01_HOSTNAME} and ${WEB_02_HOSTNAME}"
